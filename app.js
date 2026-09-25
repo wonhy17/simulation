@@ -13,8 +13,8 @@ $('#settingsBtn').onclick=()=>{manager();$('#settingsDialog').showModal()};$('#a
 function manager(){const box=$('#fieldManager');box.innerHTML='';custom.forEach(f=>box.insertAdjacentHTML('beforeend',`<div class="manager-row"><span>${f.label} · 추가 항목</span><button type="button" class="danger" data-remove-custom="${f.key}">삭제</button></div>`));box.querySelectorAll('[data-remove-custom]').forEach(b=>b.onclick=()=>{custom=custom.filter(f=>f.key!==b.dataset.removeCustom);renderCustom();manager()})}
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 const googleProvider=new firebase.auth.GoogleAuthProvider();
-async function showApp(u){user=u;$('#loginScreen').hidden=true;$('#appScreen').hidden=false;$('#authStatus').textContent=u.email||'';renderCustom();try{await refresh()}catch(e){alert('Firestore를 불러오지 못했습니다: '+e.message)}}
+async function showApp(u){user=u;$('#loginScreen').hidden=true;$('#loginScreen').style.display='none';$('#appScreen').hidden=false;$('#appScreen').style.display='block';$('#authStatus').textContent=u.email||'';renderCustom();try{await refresh()}catch(e){alert('Firestore를 불러오지 못했습니다: '+e.message)}}
 $('#loginBtn').onclick=async()=>{try{const result=location.hostname==='localhost'||location.hostname==='127.0.0.1'?await auth.signInWithRedirect(googleProvider):await auth.signInWithPopup(googleProvider);if(result?.user)await showApp(result.user)}catch(e){alert('Google 로그인에 실패했습니다: '+e.message)}};
 $('#logoutBtn').onclick=()=>auth.signOut();
 auth.getRedirectResult().then(result=>{if(result.user)user=result.user}).catch(e=>{console.error(e);const message=e.code==='auth/operation-not-allowed'?'Firebase 콘솔에서 Google 로그인을 활성화해주세요.':'Google 로그인에 실패했습니다: '+e.message;alert(message)});
-auth.onAuthStateChanged(async u=>{if(u)await showApp(u);else{$('#loginScreen').hidden=false;$('#appScreen').hidden=true;$('#history').innerHTML='';}});
+auth.onAuthStateChanged(async u=>{if(u)await showApp(u);else{$('#loginScreen').hidden=false;$('#loginScreen').style.display='';$('#appScreen').hidden=true;$('#appScreen').style.display='none';$('#history').innerHTML='';}});
