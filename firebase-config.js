@@ -1,0 +1,1 @@
+const firebaseConfig={apiKey:"AIzaSyBjx5XYUEwVzhkQ2Doso-XHnwthdHUcx-s",authDomain:"chatapp-66ecc.firebaseapp.com",databaseURL:"https://chatapp-66ecc-default-rtdb.firebaseio.com",projectId:"chatapp-66ecc",storageBucket:"chatapp-66ecc.firebasestorage.app",messagingSenderId:"923158224833",appId:"1:923158224833:web:5b569ccb243741f0b31940",measurementId:"G-8Y4E8CVX90"};

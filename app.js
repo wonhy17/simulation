@@ -1,0 +1,19 @@
+firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth(),db=firebase.firestore(),$=s=>document.querySelector(s);
+let user=null,custom=[],versionsCache=[];
+const read=()=>Object.fromEntries([...document.querySelectorAll('[data-key]')].map(i=>[i.dataset.key,i.value]));
+const write=d=>document.querySelectorAll('[data-key]').forEach(i=>i.value=d?.[i.dataset.key]||'');
+async function refresh(){const snap=await db.collection('simulationVersions').orderBy('number','desc').get();versionsCache=snap.docs.map(d=>({id:d.id,...d.data()}));render()}
+function render(){const rows=versionsCache;$('#history').innerHTML=rows.length?rows.map(v=>`<div class="history-row"><strong>v${v.number}</strong><div><div>${v.name||'이름 없는 시뮬레이션'}</div><small>${new Date(v.savedAt).toLocaleString('ko-KR')}</small></div><div><button data-load="${v.id}">불러오기</button><button class="danger" data-delete="${v.id}">삭제</button></div></div>`).join(''):'<div class="empty">저장된 버전이 없습니다.</div>';$('#history').querySelectorAll('[data-load]').forEach(b=>b.onclick=()=>load(b.dataset.load));$('#history').querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>del(b.dataset.delete))}
+function renderCustom(){document.querySelectorAll('[data-custom="true"]').forEach(n=>n.remove());custom.forEach(f=>$('.orders .fields').insertAdjacentHTML('beforeend',`<div class="field" data-custom="true"><label>${f.label}</label><input data-key="${f.key}" placeholder="입력하세요"></div>`))}
+async function save(){const n=versionsCache.length?Math.max(...versionsCache.map(v=>v.number))+1:1;await db.collection('simulationVersions').add({number:n,name:$('#name').value.trim()||`시뮬레이션 v${n}`,savedAt:new Date().toISOString(),data:read(),custom,createdBy:user.uid});$('#versionLabel').textContent=`v${n} 저장됨`;await refresh()}
+function load(id){const v=versionsCache.find(x=>x.id===id);if(!v)return;custom=v.custom||[];renderCustom();write(v.data);$('#name').value=v.name;$('#versionLabel').textContent=`v${v.number} 불러옴`}
+async function del(id){if(!confirm('이 버전을 삭제할까요?'))return;await db.collection('simulationVersions').doc(id).delete();await refresh()}
+$('#settingsBtn').onclick=()=>{manager();$('#settingsDialog').showModal()};$('#addField').onclick=()=>{const label=$('#addLabel').value.trim();if(!label)return;custom.push({key:'custom_'+Date.now(),label});$('#addLabel').value='';renderCustom();manager()};$('#saveBtn').onclick=save;$('#newBtn').onclick=()=>{custom=[];renderCustom();write();$('#name').value='';$('#versionLabel').textContent='새 시뮬레이션'};
+function manager(){const box=$('#fieldManager');box.innerHTML='';custom.forEach(f=>box.insertAdjacentHTML('beforeend',`<div class="manager-row"><span>${f.label} · 추가 항목</span><button type="button" class="danger" data-remove-custom="${f.key}">삭제</button></div>`));box.querySelectorAll('[data-remove-custom]').forEach(b=>b.onclick=()=>{custom=custom.filter(f=>f.key!==b.dataset.removeCustom);renderCustom();manager()})}
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+const googleProvider=new firebase.auth.GoogleAuthProvider();
+$('#loginBtn').onclick=()=>auth.signInWithRedirect(googleProvider);
+$('#logoutBtn').onclick=()=>auth.signOut();
+auth.getRedirectResult().then(result=>{if(result.user)user=result.user}).catch(e=>{console.error(e);const message=e.code==='auth/operation-not-allowed'?'Firebase 콘솔에서 Google 로그인을 활성화해주세요.':'Google 로그인에 실패했습니다: '+e.message;alert(message)});
+auth.onAuthStateChanged(async u=>{user=u;$('#loginScreen').hidden=!!u;$('#appScreen').hidden=!u;if(u){$('#authStatus').textContent=u.email||'';renderCustom();await refresh()}else{$('#history').innerHTML='';}});
